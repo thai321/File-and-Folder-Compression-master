@@ -2,11 +2,7 @@ import java.io.*;
 import java.lang.*;
 import java.util.*;
 
-
-/** Zipper class to generate zip files. 
- * @author Carlos A. Flores-Arellano.*/
 public class Zipper {
-
     public Zip z;
 
     public static void main (String[] args) {
@@ -14,13 +10,13 @@ public class Zipper {
     }
 
     public Zipper (String func, String input, String target) {
-        if (func.equals("zip")) {
+        if (func.equals("zipper")) {
             zip(input, target);
-        } else if (func.equals("unzip")) {
+        } else if (func.equals("unzipper")) {
             unzip(input, target);
         }
         else  {
-            System.err.println("please enter either \"zip\" or \"unzip\"");
+            System.err.println("please enter either \"zipper\" or \"unzip\"");
             System.exit(1);
         }
     }
@@ -36,9 +32,8 @@ public class Zipper {
 
     public class Zip { 
 
-        private LinkedList<String> fileNames = new LinkedList<String>();
-        private Hashtable<String, String> encodedFiles
-                                    = new Hashtable<String, String>();
+        private LinkedList<String> fileNames = new LinkedList<String>(); // filenames of the txt file
+        private Hashtable<String, String> encodedFiles = new Hashtable<String, String>();  // key = filename, value = filename.huffman
 
 
         public LinkedList<String> getfileNames() {
@@ -57,8 +52,7 @@ public class Zipper {
             fileNames.add(folder.toString());
             for (File entry : folder.listFiles()) {
                 if (entry.isFile()) {
-                    String encodedFileName =
-                                new String(entry.toString() + ".huffman");
+                    String encodedFileName = new String(entry.toString() + ".huffman");
                     try {
                         encode(entry.toString(), encodedFileName);
                     } catch (Exception e) {
@@ -72,10 +66,8 @@ public class Zipper {
             }
         }
 
-        public void encode (String inputFile, String outputFile)    
-                                                        throws Exception {
-            HuffmanEncoding encode = new HuffmanEncoding("encode", inputFile,
-                                                                    outputFile);
+        public void encode (String inputFile, String outputFile) throws Exception {
+            HuffmanEncoding encode = new HuffmanEncoding("encode", inputFile, outputFile);
         }
 
         public void outputFileWriter (String outputFile) {
@@ -118,15 +110,14 @@ public class Zipper {
 
     public class Unzip {
         
-        private Hashtable<Long, String> byteMappings =
-                                            new Hashtable<Long, String>();
+        private Hashtable<Long, String> byteMappings = new Hashtable<Long, String>();
         private PriorityQueue<Long> byteLength = new PriorityQueue<Long>();
         private LinkedList<String> directories = new LinkedList<String>();
         private String targetDirectory;
 
         public Unzip (String inputFile, String outputDirectory) {
-            targetDirectory = outputDirectory;
-            File dir = new File(targetDirectory);
+            this.targetDirectory = outputDirectory;
+            File dir = new File(this.targetDirectory);
             if (!dir.exists()) {
                 try {
                     dir.mkdirs();
@@ -142,10 +133,8 @@ public class Zipper {
         public void getMappings (String inputFile) {
             long totalBytes = 0;
             try {
-                BufferedReader in =
-                                new BufferedReader (new FileReader(inputFile));
-                for (String nextLine = in.readLine(); !nextLine.isEmpty();
-                                            nextLine = in.readLine()) {
+                BufferedReader in = new BufferedReader (new FileReader(inputFile));
+                for (String nextLine = in.readLine(); !nextLine.isEmpty(); nextLine = in.readLine()) {
                     String path = new String();
                     String location = new String();
                     boolean found = false;
@@ -172,7 +161,7 @@ public class Zipper {
 
         public void createDirectories ( ) {
             for (String file : directories) {
-                File dir = new File(targetDirectory + "/" + file);
+                File dir = new File(this.targetDirectory + "/" + file);
                 if (!dir.exists()) {
                     try {
                         dir.mkdirs();
@@ -231,8 +220,8 @@ public class Zipper {
 
         public void decodeFile (long key, StringBuilder file) {
             FileOutputHelper output = new FileOutputHelper();
-            String toDecode = targetDirectory + "/" + byteMappings.get(key) + ".huffman";
-            String decoded = targetDirectory + "/" + byteMappings.get(key);
+            String toDecode = this.targetDirectory + "/" + byteMappings.get(key) + ".huffman";
+            String decoded = this.targetDirectory + "/" + byteMappings.get(key);
             File deleteThis = new File(toDecode);
             output.writeBinStrToFile(file.toString(), toDecode);
             try {

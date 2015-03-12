@@ -1,0 +1,449 @@
+import java.util.*;
+import java.io.*;
+import java.lang.StringBuilder;
+	
+public class HuffmanEncoding {
+
+	private BinaryNode myRoot = null;
+	private int[] result;
+	private ArrayList<BinaryNode> nodes;
+	protected Hashtable <String,String> table = new Hashtable<String,String>();
+	private String inputFile;
+	private String outputFile;
+	public HuffmanEncoding(String func, String inputFile, String outputFile) {
+		if(func.equals("encode")) {	
+			nodes = new ArrayList<BinaryNode>();
+			BinaryNode eof = new BinaryNode("EOF",1);
+			nodes.add(eof);
+			result = new int[256];
+			myRoot = new BinaryNode("Root",0);
+			this.inputFile = inputFile;
+			this.outputFile = outputFile;
+			outputEncoding();
+		}
+		else if(func.equals("decode")) {
+			decode(inputFile, outputFile);
+		}
+	}
+
+	public void countWord() {
+		FileCharIterator myIter = new FileCharIterator(inputFile);
+		while(myIter.hasNext()) {
+			String s = myIter.next();  // s = 01100001 --> a
+			int index = convertToDec(s);  // index = 97  --> a
+			result[index]++;
+		}
+	}
+
+	public int convertToDec(String s) {
+		int i = 7;
+		int result = 0;
+		while(i >= 0){
+			if(s.charAt(s.length() - i -1) == '1') {
+				result += Math.pow(2,i);
+			}
+			i--;
+		}
+		return result;
+	}
+	
+//----------------------------Create Node-----begin-----------------------------------------
+	public void createNodes() {
+		for(int index = 0; index< result.length; index++) {
+			BinaryNode node = new BinaryNode(convertToBi(index),result[index]);
+			nodes.add(node);
+		}
+		removeZero();
+		insertionSort();
+		Collections.reverse(nodes);
+	}
+	public void printNodes() {
+		System.out.println("Size = " + nodes.size());
+		for(BinaryNode node: nodes)  {
+			System.out.println(node.symbol + ", " + node.freq);
+		}
+		System.out.println();
+	}
+
+	public String convertToBi(int index) {
+		String result = "";
+		int i = 7;
+		while(i >= 0) {
+			if(index/Math.pow(2,i) >= 1) {
+				result += "1";
+				index -= Math.pow(2,i);
+
+			}
+			else {
+				result +="0";
+			}
+			i--;
+		}
+		return result;
+	}
+
+	public int getDecimalFromBinary(int binary){
+         
+        int decimal = 0;
+        int power = 0;
+        while(true){
+            if(binary == 0){
+                break;
+            } else {
+                int tmp = binary%10;
+                decimal += tmp*Math.pow(2, power);
+                binary = binary/10;
+                power++;
+            }
+        }
+        return decimal;
+    }
+
+	public void removeZero() {
+		ArrayList<BinaryNode> temp = new ArrayList<BinaryNode>();
+		for(int i = 0; i < nodes.size() ; i++) {
+			if(nodes.get(i).freq != 0) {
+				temp.add(nodes.get(i));
+			}
+		}
+		nodes = temp;
+	}
+
+	public void insert (ArrayList<BinaryNode> list, int k) {
+		BinaryNode temp = list.get(k);
+		int index = k;
+		for(int i = 0; i < k ; i++) {
+		   if(temp.freq < list.get(i).freq){
+		       index = i;
+		       i = k;
+		   }
+		}
+		for(int j = k; j > index; j--){
+			list.set(j, list.get(j-1));
+		}
+		list.set(index,temp);
+    	}
+
+	public void insertionSort() {
+		ArrayList<BinaryNode> rtn = new ArrayList<BinaryNode>();
+		for (int k = 0; k < nodes.size(); k++) {
+		    rtn.add(nodes.get(k));
+		}
+		for (int k = 0; k < rtn.size(); k++) {
+		    insert(rtn, k);
+		}
+		nodes = rtn;
+	}
+
+//-----------------------Create Nodes-------------end----------------------------------
+
+//-------------------Construct the HuffMan Tree ----------begin------------------
+	public void huffManConstruct() {
+		if(nodes.size() > 0 ) {
+			myRoot = myRoot.huffManConstruct(nodes);
+			createTable();
+		}	
+	}
+//---------------------------------------------------------end-------------------
+	
+//-------------------------------Output Encoding------------------begin------
+
+	public void outputEncoding() {
+		countWord();
+    	createNodes();
+    	huffManConstruct();
+    	FileOutputHelper young = new FileOutputHelper();
+		Hashtable<String,String> table = getTable();
+		FileCharIterator myIter = new FileCharIterator(inputFile);
+		StringBuilder value  = new StringBuilder();
+		StringBuilder bits = new StringBuilder();
+
+
+		boolean flag = false;
+		try {
+			FileWriter f = new FileWriter(outputFile);
+			Enumeration<String> enumIter = table.keys();
+			while(enumIter.hasMoreElements()) {
+				String key = enumIter.nextElement();
+				f.write(key + "," + table.get(key));
+				f.write(System.getProperty("line.separator"));
+			}
+			f.write(System.getProperty("line.separator"));
+			f.close();
+		} catch (IOException e) {}
+		
+		int count = 0;
+		while(myIter.hasNext()) {
+			
+			if(!flag) {
+				String temp = table.get(myIter.next());
+				count += temp.length();
+				bits.append(temp);
+			}
+
+			if(!myIter.hasNext()) {
+				String temp = table.get("EOF");
+				count +=temp.length();
+				bits.append(temp);
+				flag  = true;
+				while(count%8 != 0) {
+					bits.append("0");
+					count++;
+				}
+			}
+		}
+		young.writeBinStrToFile(bits.toString(), outputFile);
+    }
+//-----------------------------------------------------end---------------
+ 
+	public void print() {
+		if(myRoot != null) {
+			myRoot.print(0);
+		}	
+	}
+
+	public void createTable(){
+		if(myRoot != null) {
+			myRoot.createTable("", table);
+		}
+	}
+
+	public Hashtable<String,String> getTable() {
+		return table;
+	}
+
+	public void printTable() {
+		Enumeration<String> enumIter = table.keys();
+		while(enumIter.hasMoreElements()){
+		  String key = enumIter.nextElement();
+		  System.out.println("key: " + key + " value: " + table.get(key));
+		}
+	}
+
+	public static void main(String[] args){
+		String func = args[0];
+		String target = args[1];
+		String destination = args[2];
+		HuffmanEncoding thai = new HuffmanEncoding(args[0], args[1], args[2]);
+	}
+
+	public void decode(String inputFile, String outputFile){
+		Decoding thai = new Decoding(inputFile, outputFile);
+	}
+
+	public class BinaryNode {
+		public String symbol;
+		public int freq;
+		public BinaryNode parent;
+		public BinaryNode left; // zero
+		public BinaryNode right; // one
+
+
+		public BinaryNode(){
+			symbol = "*";
+			freq = 0;
+			parent = null;
+			left = null;
+			right = null;
+		}
+		public BinaryNode(String symbol) {
+			this.symbol = symbol;
+			freq = 0;
+			parent = null;
+			left = null;
+			right = null;
+		}
+		public BinaryNode(String sym, int freq) {
+			symbol = sym;
+			this.freq = freq;
+			left = right = null;
+		}
+		public BinaryNode(BinaryNode left, BinaryNode right) {
+			this.freq = left.freq + right.freq;
+			this.symbol = Integer.toString(this.freq);
+			this.left = left;
+			this.right = right;
+		}
+
+		public BinaryNode huffManConstruct(ArrayList<BinaryNode> nodes) {
+			if(nodes.size() == 1) {
+				return nodes.get(0);
+			}
+			else {
+				BinaryNode temp = combine(nodes.get(nodes.size()-2), nodes.get(nodes.size()-1));
+				nodes.remove(nodes.size()-1);
+				nodes.remove(nodes.size()-1);
+				Collections.reverse(nodes);
+				nodes.add(temp);
+				insert(nodes, nodes.size() -1);
+				Collections.reverse(nodes);
+				return huffManConstruct(nodes);
+			}
+		}
+
+		public BinaryNode combine(BinaryNode node1, BinaryNode node2) {
+			return new BinaryNode(node1 ,node2);
+		}
+
+		public void createTable(String s, Hashtable<String,String> table) {
+			if(left == null && right == null) {
+				table.put(symbol, s);
+			}
+			if(left != null) {
+				left.createTable(s + "0", table);
+			}
+			if(right != null) {
+				right.createTable(s + "1", table);
+			}
+		}
+
+		public void printNodes(ArrayList<BinaryNode> nodes) {
+			System.out.println("Size = " + nodes.size());
+			for(int i = 0; i < nodes.size(); i++)  {
+				System.out.println(nodes.get(i).symbol + ", " + nodes.get(i).freq);
+			}
+			System.out.println();
+		}
+
+		public void insert (ArrayList<BinaryNode> list, int k) {
+	        BinaryNode temp = list.get(k);
+	        int index = k;
+	        for(int i = 0; i < k ; i++) {
+	           if(temp.freq < list.get(i).freq){
+	               index = i;
+	               i = k;
+	           }
+	       }
+	       for(int j = k; j > index; j--){
+	       		list.set(j, list.get(j-1));
+	       }
+	       list.set(index,temp);
+	    }
+
+	    private void print(int indent) {
+	    	
+            if(right != null && left != null) {
+                right.print(indent + 2);
+                println(symbol, indent);
+                left.print(indent + 2);
+            }
+            else if(left != null) {
+                left.print(indent + 2);
+                println(symbol, indent);
+            }
+            else if(right != null) {
+                right.print(indent + 2);
+                println(symbol, indent);
+            }
+            else {
+                println(symbol, indent);
+            }
+        }
+
+        private static final String indent1 = "    ";
+        private void println (String sym, int indent) {
+            for (int k = 0; k < indent; k++) {
+                System.out.print(indent1);
+            }
+            System.out.println(sym);
+        }
+	}
+
+
+
+	public class Decoding {
+		private BinaryNode root ;
+		private Hashtable <String,String> table;
+		private String outputFile;
+		private String inputFile;
+		public Decoding(String inputFile, String outputFile){
+			this.root = null;
+			table = new Hashtable<String,String>();
+			this.outputFile = outputFile;
+			this.inputFile = inputFile;
+			createTable();
+			output(getCodeMap());
+		}
+
+		public void outputDecoding() {
+			Enumeration<String> enumIter = table.keys();
+			this.root = new BinaryNode();
+			this.root.symbol = "Root";
+			while(enumIter.hasMoreElements()){
+			  String key = enumIter.nextElement();
+			  String value = table.get(key);
+			}
+		}
+		public void createTable() {
+			String current;
+			try {
+				BufferedReader in = new BufferedReader(new FileReader(inputFile));
+				int count = 0;
+				while((current = in.readLine()) != null && !current.equals("")) {
+					count++;
+					if(current.substring(0,3).equals("EOF")) {
+						table.put(current.substring(4), current.substring(0,3));
+
+					}
+					else {
+						table.put(current.substring(9), current.substring(0,8));
+					}
+				}
+
+			} catch(IOException e) {
+				System.out.println("File is not Found");
+			}
+		}
+
+		public StringBuilder getCodeMap() {
+			FileCharIterator myIter = new FileCharIterator(inputFile);
+			StringBuilder s = new StringBuilder();
+
+			while(myIter.hasNext()) {
+				String current = myIter.next();
+				if(current.equals("00001010")) {
+					current = myIter.next();
+					if(current.equals("00001010")) {
+						break;
+					}
+				}
+			}
+
+			while(myIter.hasNext()) {
+				String temp = myIter.next();
+				s.append(temp);
+			}
+			return s;
+		}
+		public void output(StringBuilder codes) {
+			StringBuilder temp = new StringBuilder();
+			StringBuilder output = new StringBuilder();
+			int size = codes.length();
+			int i = 0;
+			while(size > 0) {
+				temp.append(codes.charAt(i++));
+				if(table.containsKey(temp.toString())) {
+					if(table.get(temp.toString()).equals("EOF")) {
+						FileOutputHelper young = new FileOutputHelper();
+						young.writeBinStrToFile(output.toString(), outputFile);
+						return;
+					}
+					output.append(table.get(temp.toString()));
+					codes = codes.delete(0,i);
+					size -= i;
+					i = 0;
+					temp = new StringBuilder();
+				}
+			}
+		}
+
+		public void printTable() {
+			Enumeration<String> enumIter = table.keys();
+			while(enumIter.hasMoreElements()){
+			  String key = enumIter.nextElement();
+			  System.out.println("key: " + key + " value: " + table.get(key));
+			}
+		}
+
+	} 
+}

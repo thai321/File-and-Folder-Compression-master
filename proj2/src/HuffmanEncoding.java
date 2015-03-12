@@ -111,25 +111,31 @@ public class HuffmanEncoding {
 
 	} 
 
+	public String checkTree(String codemap) {  //for testing 
+		return myRoot.checkTree(codemap);
+	}
+
 		
 //----------------------------Create Node----------begin-------------------------
 		public void createNodes() {   // create nodes for constructing the Huffman tree
-			Iterator <Map.Entry<String, Integer>> iterator = getFreq.entrySet().iterator();
-			while(iterator.hasNext()){
-				Map.Entry<String, Integer> entry = iterator.next();
-				String key = entry.getKey();
-				Integer val = entry.getValue();	
-				BinaryNode node = new BinaryNode(key,val);
-				nodes.add(node);
+			if(!getFreq.isEmpty()) {
+				Iterator <Map.Entry<String, Integer>> iterator = getFreq.entrySet().iterator();
+				while(iterator.hasNext()){
+					Map.Entry<String, Integer> entry = iterator.next();
+					String key = entry.getKey();
+					Integer val = entry.getValue();	
+					BinaryNode node = new BinaryNode(key,val);
+					nodes.add(node);
+				}
+				Collections.sort(nodes,new HuffmanEncoding.Freq());
 			}
-			Collections.sort(nodes,new HuffmanEncoding.Freq());
 		}
 
 //-----------------------Create Nodes-------------end----------------------------------
 
 //-------------------Construct the HuffMan Tree ----------begin------------------
 		public void huffManConstruct() {  // construct Huffman tree from nodes (arrayList)
-			if(nodes.size() > 0 ) {
+			if(nodes.size() > 1 ) {
 				myRoot = myRoot.huffManConstruct(nodes);
 				createTable();	// create Table after construct Huffman tree
 			}	
@@ -173,60 +179,54 @@ public class HuffmanEncoding {
 			countWord();
 	    	createNodes();
 	    	huffManConstruct();
-			try {
-				FileWriter f = new FileWriter(outputFile);
-				Iterator <Map.Entry<String, String>> iterator = table.entrySet().iterator();
-				while(iterator.hasNext()){
-					Map.Entry<String, String> entry = iterator.next();
-					String key = entry.getKey();
-					String val = entry.getValue();
-					f.write(key + "," + val);
+	    	if(!table.isEmpty()) {
+				try {
+					FileWriter f = new FileWriter(outputFile);
+					Iterator <Map.Entry<String, String>> iterator = table.entrySet().iterator();
+					while(iterator.hasNext()){
+						Map.Entry<String, String> entry = iterator.next();
+						String key = entry.getKey();
+						String val = entry.getValue();
+						f.write(key + "," + val);
+						f.write(System.getProperty("line.separator"));
+					}
 					f.write(System.getProperty("line.separator"));
+					f.close();
+				} catch (IOException e) {
+					System.out.println("Can't find or create" + outputFile);
 				}
-				f.write(System.getProperty("line.separator"));
-				f.close();
-			} catch (IOException e) {
-				System.out.println("Can't find or create" + outputFile);
-			}
-			
-			// FileCharIterator myIter = new FileCharIterator(inputFile);
-			FileFreqWordsIterator myIter = new FileFreqWordsIterator(inputFile, this.n);
-			FileOutputHelper young = new FileOutputHelper();
-			StringBuilder bits = new StringBuilder();
-			boolean flag = false;
-			int count = 0;
-			while(myIter.hasNext()) {
 				
-				if(!flag) {
-					String temp = table.get(myIter.next());
-					count += temp.length();
-					bits.append(temp);
-				}
+				// FileCharIterator myIter = new FileCharIterator(inputFile);
+				FileFreqWordsIterator myIter = new FileFreqWordsIterator(inputFile, this.n);
+				FileOutputHelper young = new FileOutputHelper();
+				StringBuilder bits = new StringBuilder();
+				boolean flag = false;
+				int count = 0;
+				while(myIter.hasNext()) {
+					
+					if(!flag) {
+						String temp = table.get(myIter.next());
+						count += temp.length();
+						bits.append(temp);
+					}
 
-				if(!myIter.hasNext()) {
-					String temp = table.get("EOF");
-					count +=temp.length();
-					bits.append(temp);
-					flag  = true;
-					while(count%8 != 0) {
-						bits.append("0");
-						count++;
+					if(!myIter.hasNext()) {
+						String temp = table.get("EOF");
+						count +=temp.length();
+						bits.append(temp);
+						flag  = true;
+						while(count%8 != 0) {
+							bits.append("0");
+							count++;
+						}
 					}
 				}
-			}
-			young.writeBinStrToFile(bits.toString(), outputFile);
-	    }
+				young.writeBinStrToFile(bits.toString(), outputFile);
+		    }
+		}
    }
 
 //----------------Output Encoding------------------End---------------------
-
- //   	public HashMap<String,String> getTable() {
-	// 		return new HashMap<String,String>(table);
-	// 	}
-
-	// public HashMap<String,Integer> getGetFreq() {
-	// 	return new HashMap<String,Integer>(getFreq);
-	// } 
 
 ///--------Comparator--------begin-----------------------------------------
    public static class Freq implements Comparator<BinaryNode> {
@@ -253,19 +253,8 @@ public class HuffmanEncoding {
 			output(getCodeMap());
 		}
 
-		public void outputDecoding() {
-
-			Iterator <Map.Entry<String, String>> iterator = table.entrySet().iterator();
-			this.root = new BinaryNode();
-			this.root.symbol = "Root";
-			while(iterator.hasNext()){
-				Map.Entry<String, String> entry = iterator.next();
-				String key = entry.getKey();
-				String val = entry.getValue();	
-			}
-		}
-
-		public StringBuilder getCodeMap() {
+		public StringBuilder getCodeMap() {  //create a table from huffman file and reade all the machine readable code (codemap)
+											// return the stringBuilder object that is contains all the codemap('0' and '1') from the machine readable code
 			FileCharIterator myIter = new FileCharIterator(inputFile);
 			boolean flag = false;
 			boolean flag2 = false;
@@ -418,6 +407,19 @@ public class HuffmanEncoding {
 				right.createTable(s + "1", table);
 			}
 		}
+
+		public String checkTree(String s) { // for testing
+			if(s.length() == 0) {
+				return this.symbol;
+			}
+			else if(s.charAt(0) == '0') {
+				return this.left.checkTree(s.substring(1));
+			}
+			else {
+				return this.right.checkTree(s.substring(1));
+			}
+		}
+
 //-------------Print Stuff ---------------begin-----------for testing---------------
 	    private void print(int indent) {
 	    	

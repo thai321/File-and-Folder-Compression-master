@@ -1,0 +1,32 @@
+public void updateTable() {
+		HashMap<String, Integer> temp = new HashMap<String,Integer>();
+		Iterator <Map.Entry<String, Integer>> iterator = table.entrySet().iterator();
+		while(iterator.hasNext()){
+			Map.Entry<String, Integer> entry = iterator.next();
+			String key = entry.getKey();
+			int val = entry.getValue();
+			if(!maxWords.containsKey(key)) {
+				if(key.length() > 1) {
+					while(val > 0) {
+						int i = 0;
+						while(i < key.length()) {
+							String k = Character.toString(key.charAt(i));
+							if(table.containsKey(k) && temp.containsKey(k)) {
+								temp.put(k, temp.get(k) + 1);
+							}
+							else {
+								temp.put(k, 1);
+							}
+							i++;
+						}
+						val--;
+					}
+				}
+				else{
+					temp.put(key,val);
+				}
+			}
+			
+		}
+		table = temp;
+	}
